@@ -15,5 +15,5 @@
 # vendor/
 
 testenv
-./alfred
+alfred
 .env

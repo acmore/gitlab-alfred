@@ -22,8 +22,13 @@ func NewProjectCommand(wf *aw.Workflow, client provider.Provider) *ProjectComman
 	return &ProjectCommand{client: client, wf: wf}
 }
 
-func (c *ProjectCommand) List() {
+func (c *ProjectCommand) List(args []string) {
 	defer c.wf.SendFeedback()
+
+	var query string
+	if len(args) > 2 {
+		query = args[2]
+	}
 
 	reload := func() (interface{}, error) {
 		var projects []*provider.Project
@@ -52,5 +57,11 @@ func (c *ProjectCommand) List() {
 	for _, p := range projects {
 		c.wf.Feedback.NewItem(p.Name).Subtitle(p.WebURL).Arg(p.WebURL)
 	}
+
+	// Filter result
+	if len(query) > 0 {
+		c.wf.Filter(query)
+	}
+
 	c.wf.WarnEmpty("Empty", "No projects")
 }

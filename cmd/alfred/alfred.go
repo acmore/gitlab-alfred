@@ -48,10 +48,10 @@ func run() {
 	cmd, subcmd := args[0], args[1]
 	switch cmd {
 	case "project":
-		proj_cmd := commands.NewProjectCommand(wf, client)
+		projCmd := commands.NewProjectCommand(wf, client)
 		switch subcmd {
 		case "list":
-			proj_cmd.List()
+			projCmd.List(args)
 		}
 	}
 
