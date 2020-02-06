@@ -22,14 +22,26 @@ func NewProjectCommand(wf *aw.Workflow, client provider.Provider) *ProjectComman
 	return &ProjectCommand{client: client, wf: wf}
 }
 
-func (c *ProjectCommand) List(args []string) {
+func (c *ProjectCommand) Run(args []string) {
 	defer c.wf.SendFeedback()
 
+	if len(args) < 1 {
+		c.wf.Warn("Warning", "Missing subcommand")
+		return
+	}
 	var query string
-	if len(args) > 2 {
-		query = args[2]
+	if len(args) > 1 {
+		query = args[1]
 	}
 
+	subcmd := args[0]
+	switch subcmd {
+	case "list":
+		c.List(query)
+	}
+}
+
+func (c *ProjectCommand) List(query string) {
 	reload := func() (interface{}, error) {
 		var projects []*provider.Project
 		page, pageSize := 0, 100
@@ -55,7 +67,13 @@ func (c *ProjectCommand) List(args []string) {
 		return
 	}
 	for _, p := range projects {
-		c.wf.Feedback.NewItem(p.Name).Subtitle(p.WebURL).Arg(p.WebURL)
+		c.wf.Feedback.NewItem(p.Name).
+			Subtitle(p.WebURL).
+			Var("project_id", p.ID).
+			Var("project_name", p.Name).
+			Var("project_url", p.WebURL).
+			Valid(true).
+			Autocomplete(p.Name)
 	}
 
 	// Filter result

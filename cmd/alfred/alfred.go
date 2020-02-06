@@ -32,7 +32,7 @@ func init() {
 func run() {
 	wf.Args()
 	flag.Parse()
-	if flag.NArg() < 2 {
+	if flag.NArg() < 1 {
 		panic(fmt.Errorf("invalid arguments %d", flag.NArg()))
 	}
 	args := flag.Args()
@@ -45,17 +45,19 @@ func run() {
 	// Create a provider
 	client = provider.NewGitlabProvider(cfg.URL, cfg.Token)
 
-	cmd, subcmd := args[0], args[1]
+	cmd := args[0]
+	args = args[1:]
 	switch cmd {
 	case "project":
 		projCmd := commands.NewProjectCommand(wf, client)
-		switch subcmd {
-		case "list":
-			projCmd.List(args)
-		}
+		projCmd.Run(args)
+	case "pipeline":
+		pipelineCmd := commands.NewPipelineCommand(wf, client)
+		pipelineCmd.Run(args)
+	case "branch":
+		branchCmd := commands.NewBranchCommand(wf, client)
+		branchCmd.Run(args)
 	}
-
-	log.Printf("loaded %v", cfg)
 }
 
 func main() {
