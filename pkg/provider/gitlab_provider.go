@@ -132,3 +132,21 @@ func (c *GitlabProvider) CreatePipeline(projectID, ref string, variables map[str
 	}
 	return pipeline, nil
 }
+
+func (c *GitlabProvider) CancelPipeline(projectID, pipelineID string) (*Pipeline, error) {
+	id, _ := strconv.Atoi(pipelineID)
+	p, _, err := c.client.Pipelines.CancelPipelineBuild(projectID, id)
+	if err != nil {
+		return nil, err
+	}
+	pipeline := &Pipeline{
+		ID:        strconv.Itoa(p.ID),
+		Status:    p.Status,
+		Ref:       p.Ref,
+		WebURL:    p.WebURL,
+		Hash:      p.SHA,
+		UpdatedAt: p.UpdatedAt,
+		CreatedAt: p.CreatedAt,
+	}
+	return pipeline, nil
+}

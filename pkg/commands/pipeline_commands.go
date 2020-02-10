@@ -28,13 +28,14 @@ func (c *PipelineCommand) Run(args []string) {
 
 	log.Printf("%v", args)
 
-	var projectID, query, branch, app string
+	var projectID, query, branch, app, pipelineID string
 
 	flagSet := flag.NewFlagSet("pipeline", flag.ContinueOnError)
 	flagSet.StringVar(&projectID, "project-id", "", "Project ID")
 	flagSet.StringVar(&query, "query", "", "Query")
 	flagSet.StringVar(&branch, "branch", "", "Branch to run pipeline")
 	flagSet.StringVar(&app, "app", "", "App name")
+	flagSet.StringVar(&pipelineID, "pipeline-id", "", "Pipeline ID")
 
 	if err := flagSet.Parse(args); err != nil {
 		log.Printf("Failed to parse command, err: %s", err.Error())
@@ -50,6 +51,8 @@ func (c *PipelineCommand) Run(args []string) {
 		c.List(projectID, query)
 	case "run":
 		c.Create(projectID, branch, app)
+	case "cancel":
+		c.Cancel(projectID, pipelineID)
 	}
 }
 
@@ -121,6 +124,21 @@ func (c *PipelineCommand) Create(projectID, branch, app string) {
 	p, err := c.client.CreatePipeline(projectID, branch, vars)
 	if err != nil {
 		c.wf.Warn("Failure", err.Error())
+		return
 	}
 	c.wf.NewItem(p.WebURL).Var("pipeline_id", p.ID).Var("pipeline_url", p.WebURL).Subtitle(p.Status).Valid(true)
+}
+
+func (c *PipelineCommand) Cancel(projectID, pipelineID string) {
+	log.Printf("Cancel a pipeline %s, %s", projectID, pipelineID)
+
+	c.wf.NewItem("Canceling pipeline").Subtitle(pipelineID).Valid(false)
+	c.wf.SendFeedback()
+
+	p, err := c.client.CancelPipeline(projectID, pipelineID)
+	if err != nil {
+		c.wf.Warn("Failure", err.Error())
+		return
+	}
+	c.wf.NewItem("Pipeline is cancelled").Subtitle(p.WebURL).Var("pipeline_url", p.WebURL).Valid(true)
 }
