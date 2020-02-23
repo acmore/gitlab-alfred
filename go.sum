@@ -1,3 +1,5 @@
+github.com/andybrewer/mack v0.0.0-20200107183837-a347fce911ce h1:jyqgSe5udJ1jR0lS8FX0Ii2qQQ/8VzuF3ZON2U/eQtI=
+github.com/andybrewer/mack v0.0.0-20200107183837-a347fce911ce/go.mod h1:unYm1XWSUgGRVv0MaRe3DFEGh2OEcUQ/sFSGxXjXBfI=
 github.com/bmatcuk/doublestar v1.1.5/go.mod h1:wiQtGV+rzVYxB7WIlirSN++5HPtPlXEo9MEoZQC/PmE=
 github.com/davecgh/go-spew v1.1.0 h1:ZDRjVQ15GmhC3fiQ8ni8+OwkZQO4DARzQgrnXU1Liz8=
 github.com/davecgh/go-spew v1.1.0/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=

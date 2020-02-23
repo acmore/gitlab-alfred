@@ -18,4 +18,4 @@ testenv
 alfred
 .env
 .air.conf
-
+tmp/

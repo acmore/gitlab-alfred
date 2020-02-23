@@ -29,6 +29,14 @@ func init() {
 	wf = aw.New()
 }
 
+func setKey(key, value string) {
+	wf.Configure(aw.TextErrors(true))
+
+	if err := wf.Config.Set(key, value, true).Do(); err != nil {
+		wf.FatalError(err)
+	}
+}
+
 func run() {
 	wf.Args()
 	flag.Parse()
@@ -60,6 +68,12 @@ func run() {
 	case "issue":
 		issueCmd := commands.NewIssueCommand(wf, client)
 		issueCmd.Run(args)
+	case "config":
+		if len(args) < 2 {
+			log.Println("missing key value")
+			break
+		}
+		setKey(args[0], args[1])
 	}
 }
 

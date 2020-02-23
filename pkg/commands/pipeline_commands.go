@@ -1,8 +1,12 @@
 package commands
 
 import (
+	"errors"
 	"fmt"
 	"log"
+	"os"
+	"os/exec"
+	"strings"
 	"time"
 
 	"github.com/acmore/gitlab-alfred/pkg/provider"
@@ -12,7 +16,22 @@ import (
 
 const (
 	CacheKeyPipelineFormat = "pipelines-%s"
+
+	notifyTrigger = "tell application id \"com.runningwithcrayons.Alfred\" to run trigger \"notify\" in workflow \"com.acmore.gitlab\" with argument \"%s\""
 )
+
+func run(command string) (string, error) {
+	cmd := exec.Command("osascript", "-e", command)
+	output, err := cmd.CombinedOutput()
+	prettyOutput := strings.Replace(string(output), "\n", "", -1)
+
+	// Ignore errors from the user hitting the cancel button
+	if err != nil && strings.Index(string(output), "User canceled.") < 0 {
+		return "", errors.New(err.Error() + ": " + prettyOutput + " (" + command + ")")
+	}
+
+	return prettyOutput, nil
+}
 
 type PipelineCommand struct {
 	wf     *aw.Workflow
@@ -53,6 +72,8 @@ func (c *PipelineCommand) Run(args []string) {
 		c.Create(projectID, branch, app)
 	case "cancel":
 		c.Cancel(projectID, pipelineID)
+	case "watch":
+		c.Watch(projectID, pipelineID)
 	}
 }
 
@@ -65,25 +86,13 @@ func (c *PipelineCommand) List(projectID string, query string) {
 	if len(query) > 0 {
 		c.wf.Filter(query)
 	}
-	c.wf.SendFeedback()
 
 	reload := func() (interface{}, error) {
 		var pipelines []*provider.Pipeline
 
 		pageSize := 100
-		for page := 0; ; page++ {
-			res, err := c.client.ListPipelines(projectID, page, pageSize, "running")
-			if err != nil {
-				return nil, err
-			}
-			pipelines = append(pipelines, res...)
-			if len(res) < pageSize {
-				break
-			}
-		}
-
-		for page := 0; ; page++ {
-			res, err := c.client.ListPipelines(projectID, page, pageSize, "pending")
+		for page := 1; ; page++ {
+			res, err := c.client.ListPipelines(projectID, page, pageSize, "")
 			if err != nil {
 				return nil, err
 			}
@@ -98,7 +107,8 @@ func (c *PipelineCommand) List(projectID string, query string) {
 
 	var pipelines []*provider.Pipeline
 	if err := c.wf.Cache.LoadOrStoreJSON(fmt.Sprintf(CacheKeyPipelineFormat, projectID), 10*time.Second, reload, &pipelines); err != nil {
-		panic(err)
+		c.wf.FatalError(err)
+		return
 	}
 
 	for _, p := range pipelines {
@@ -130,6 +140,12 @@ func (c *PipelineCommand) Create(projectID, branch, app string) {
 		return
 	}
 	c.wf.NewItem(p.WebURL).Var("pipeline_id", p.ID).Var("pipeline_url", p.WebURL).Subtitle(p.Status).Valid(true)
+
+	// Start a background process to watch
+	cmd := exec.Command(os.Args[0], "pipeline", "watch", "--project-id", projectID, "--pipeline-id", p.ID)
+	if err := c.wf.RunInBackground("watch", cmd); err != nil {
+		c.wf.FatalError(err)
+	}
 }
 
 func (c *PipelineCommand) Cancel(projectID, pipelineID string) {
@@ -144,4 +160,27 @@ func (c *PipelineCommand) Cancel(projectID, pipelineID string) {
 		return
 	}
 	c.wf.NewItem("Pipeline is cancelled").Subtitle(p.WebURL).Var("pipeline_url", p.WebURL).Valid(true)
+}
+
+func (c *PipelineCommand) Watch(projectID, pipelineID string) {
+	if len(projectID) == 0 || len(pipelineID) == 0 {
+		return
+	}
+
+	for {
+		p, err := c.client.GetPipeline(projectID, pipelineID)
+		if err != nil {
+			time.Sleep(1 * time.Second)
+			continue
+		}
+		if p.Status == provider.PipelineStatusPending || p.Status == provider.PipelineStatusRunning {
+			time.Sleep(5 * time.Second)
+		} else {
+			arg := fmt.Sprintf("%s:%s:%s", projectID, pipelineID, p.Status)
+			if s, err := run(fmt.Sprintf(notifyTrigger, arg)); err != nil {
+				log.Printf("notify trigger failed: %v, output: %s", err, s)
+			}
+			break
+		}
+	}
 }

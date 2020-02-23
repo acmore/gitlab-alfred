@@ -2,7 +2,6 @@ package commands
 
 import (
 	"log"
-	"sort"
 	"time"
 
 	"github.com/acmore/gitlab-alfred/pkg/provider"
@@ -58,11 +57,8 @@ func (c *ProjectCommand) List(query string) {
 			}
 			page += 1
 		}
-		log.Printf("reloaded %d projects", len(projects))
 		return projects, nil
 	}
-
-	log.Printf("cache dir is %s", c.wf.Cache.Dir)
 
 	var projects []*provider.Project
 	err := c.wf.Cache.LoadOrStoreJSON(CacheKeyProject, 168*time.Hour, reload, &projects)
@@ -70,13 +66,6 @@ func (c *ProjectCommand) List(query string) {
 		c.wf.Warn(TitleWarning, err.Error())
 		return
 	}
-	var names []string
-	for _, p := range projects {
-		names = append(names, p.Name)
-	}
-	sort.Sort(sort.StringSlice(names))
-	log.Printf("%d projects", len(names))
-	log.Printf("names: %v", names)
 	for _, p := range projects {
 		c.wf.NewItem(p.Name).
 			Subtitle(p.WebURL).

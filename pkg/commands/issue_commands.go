@@ -55,7 +55,6 @@ func (c *IssueCommand) List(projectID string, query string) {
 	if len(query) > 0 {
 		c.wf.Filter(query)
 	}
-	c.wf.SendFeedback()
 
 	reload := func() (interface{}, error) {
 		var issues []*provider.Issue
