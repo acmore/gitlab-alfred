@@ -54,7 +54,7 @@ func (c *BranchCommand) List(projectID string, query string) {
 		var branches []*provider.Branch
 
 		pageSize := 100
-		for page := 1; ; page++ {
+		for page := 0; ; page++ {
 			res, err := c.client.ListBranches(projectID, page, pageSize)
 			if err != nil {
 				return nil, err

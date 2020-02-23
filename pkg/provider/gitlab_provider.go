@@ -150,3 +150,31 @@ func (c *GitlabProvider) CancelPipeline(projectID, pipelineID string) (*Pipeline
 	}
 	return pipeline, nil
 }
+
+func (c *GitlabProvider) ListIssues(projectID string, page, pageSize int) ([]*Issue, error) {
+	opt := &gitlab.ListProjectIssuesOptions{ListOptions: gitlab.ListOptions{Page: page, PerPage: pageSize}}
+	issues, _, err := c.client.Issues.ListProjectIssues(projectID, opt)
+	if err != nil {
+		return nil, err
+	}
+	var result []*Issue
+	for _, issue := range issues {
+		item := &Issue{
+			ID:          strconv.Itoa(issue.ID),
+			ProjectID:   projectID,
+			Description: issue.Description,
+			State:       issue.State,
+			Title:       issue.Title,
+			UpdatedAt:   issue.UpdatedAt,
+			CreatedAt:   issue.CreatedAt,
+			ClosedAt:    issue.ClosedAt,
+			WebURL:      issue.WebURL,
+			Weight:      issue.Weight,
+		}
+		if issue.Assignee != nil {
+			item.Assignee = issue.Assignee.Name
+		}
+		result = append(result, item)
+	}
+	return result, nil
+}

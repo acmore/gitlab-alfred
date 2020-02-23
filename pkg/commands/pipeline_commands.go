@@ -59,11 +59,19 @@ func (c *PipelineCommand) Run(args []string) {
 func (c *PipelineCommand) List(projectID string, query string) {
 	log.Printf("List pipeline %s, %s", projectID, query)
 
+	// Show create option
+	c.wf.NewItem("Run").Subtitle("Runs a pipeline").Arg("run").Valid(true)
+	c.wf.NewItem("Open").Subtitle("Open pipelines page").Arg("open").Valid(true)
+	if len(query) > 0 {
+		c.wf.Filter(query)
+	}
+	c.wf.SendFeedback()
+
 	reload := func() (interface{}, error) {
 		var pipelines []*provider.Pipeline
 
 		pageSize := 100
-		for page := 1; ; page++ {
+		for page := 0; ; page++ {
 			res, err := c.client.ListPipelines(projectID, page, pageSize, "running")
 			if err != nil {
 				return nil, err
@@ -74,7 +82,7 @@ func (c *PipelineCommand) List(projectID string, query string) {
 			}
 		}
 
-		for page := 1; ; page++ {
+		for page := 0; ; page++ {
 			res, err := c.client.ListPipelines(projectID, page, pageSize, "pending")
 			if err != nil {
 				return nil, err
@@ -88,18 +96,13 @@ func (c *PipelineCommand) List(projectID string, query string) {
 		return pipelines, nil
 	}
 
-	if len(query) == 0 {
-		// Show create option
-		c.wf.Feedback.NewItem("Run").Subtitle("Runs a pipeline").Arg("run").Valid(true)
-	}
-
 	var pipelines []*provider.Pipeline
 	if err := c.wf.Cache.LoadOrStoreJSON(fmt.Sprintf(CacheKeyPipelineFormat, projectID), 10*time.Second, reload, &pipelines); err != nil {
 		panic(err)
 	}
 
 	for _, p := range pipelines {
-		c.wf.Feedback.NewItem(p.Ref).
+		c.wf.NewItem(p.Ref).
 			Subtitle(p.Status).
 			Var("pipeline_id", p.ID).
 			Var("pipeline_ref", p.Ref).

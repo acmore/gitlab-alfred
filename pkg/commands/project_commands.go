@@ -2,6 +2,7 @@ package commands
 
 import (
 	"log"
+	"sort"
 	"time"
 
 	"github.com/acmore/gitlab-alfred/pkg/provider"
@@ -44,7 +45,7 @@ func (c *ProjectCommand) Run(args []string) {
 func (c *ProjectCommand) List(query string) {
 	reload := func() (interface{}, error) {
 		var projects []*provider.Project
-		page, pageSize := 0, 100
+		page, pageSize := 1, 100
 		for {
 			items, err := c.client.ListProjects(page, pageSize)
 			if err != nil {
@@ -57,23 +58,33 @@ func (c *ProjectCommand) List(query string) {
 			}
 			page += 1
 		}
+		log.Printf("reloaded %d projects", len(projects))
 		return projects, nil
 	}
 
+	log.Printf("cache dir is %s", c.wf.Cache.Dir)
+
 	var projects []*provider.Project
-	err := c.wf.Cache.LoadOrStoreJSON(CacheKeyProject, 1*time.Hour, reload, &projects)
+	err := c.wf.Cache.LoadOrStoreJSON(CacheKeyProject, 168*time.Hour, reload, &projects)
 	if err != nil {
 		c.wf.Warn(TitleWarning, err.Error())
 		return
 	}
+	var names []string
 	for _, p := range projects {
-		c.wf.Feedback.NewItem(p.Name).
+		names = append(names, p.Name)
+	}
+	sort.Sort(sort.StringSlice(names))
+	log.Printf("%d projects", len(names))
+	log.Printf("names: %v", names)
+	for _, p := range projects {
+		c.wf.NewItem(p.Name).
 			Subtitle(p.WebURL).
 			Var("project_id", p.ID).
 			Var("project_name", p.Name).
 			Var("project_url", p.WebURL).
-			Valid(true).
-			Autocomplete(p.Name)
+			Autocomplete(p.Name).
+			Valid(true)
 	}
 
 	// Filter result

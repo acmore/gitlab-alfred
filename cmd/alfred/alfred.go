@@ -57,6 +57,9 @@ func run() {
 	case "branch":
 		branchCmd := commands.NewBranchCommand(wf, client)
 		branchCmd.Run(args)
+	case "issue":
+		issueCmd := commands.NewIssueCommand(wf, client)
+		issueCmd.Run(args)
 	}
 }
 

@@ -51,3 +51,17 @@ type Pipeline struct {
 type Job struct {
 	Status string
 }
+
+type Issue struct {
+	ID          string
+	ProjectID   string
+	Description string
+	State       string
+	Assignee    string
+	Title       string
+	UpdatedAt   *time.Time
+	CreatedAt   *time.Time
+	ClosedAt    *time.Time
+	WebURL      string
+	Weight      int
+}

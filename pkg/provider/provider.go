@@ -8,4 +8,6 @@ type Provider interface {
 	ListBranches(projectID string, page, pageSize int) ([]*Branch, error)
 	CreatePipeline(projectID, ref string, variables map[string]string) (*Pipeline, error)
 	CancelPipeline(projectID, pipelineID string) (*Pipeline, error)
+
+	ListIssues(projectID string, page, pageSize int) ([]*Issue, error)
 }

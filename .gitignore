@@ -17,3 +17,5 @@
 testenv
 alfred
 .env
+.air.conf
+
